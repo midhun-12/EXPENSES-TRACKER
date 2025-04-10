@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Expense Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f4f4;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .header {
+            background: #4caf50;
+            padding: 40px;
+            color: white;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+            flex-grow: 1;
+        }
+        .summary {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        form input, form select, form button {
+            padding: 10px;
+            margin: 10px 5px;
+            border-radius: 8px;
+        }
+        form button {
+            background: #4caf50;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+        .chart-container {
+            max-width: 500px;
+            margin: 30px auto;
+        }
+        .legend {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .legend span {
+            display: inline-block;
+            margin: 5px 10px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            color: #fff;
+        }
+        .logout-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .logout-button {
+            padding: 10px 20px;
+            background-color: #e53935;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .clear-button {
+            padding: 10px 20px;
+            background-color: #ff5722;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Welcome to Your Dashboard</h1>
+        <p>Track your income and expenses easily</p>
+    </div>
+
+    <div class="content">
+        <div class="summary">
+            <div><strong>Income:</strong> ₹{{ income }}</div>
+            <div><strong>Spent:</strong> ₹{{ total_expense }}</div>
+            <div><strong>Savings:</strong> ₹{{ savings }}</div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="expenseChart"></canvas>
+        </div>
+
+        <form method="POST" action="/add">
+            <input type="text" name="title" placeholder="Expense Title" required>
+            <input type="number" step="0.01" name="amount" placeholder="Amount" required>
+            <select name="category" required>
+                <option value="Food">Food</option>
+                <option value="Travel">Travel</option>
+                <option value="Bills">Bills</option>
+                <option value="Shopping">Shopping</option>
+            </select>
+            <button type="submit">Add Expense</button>
+        </form>
+
+        <!-- 🔸 Clear Button -->
+        <form method="POST" action="/clear">
+            <button type="submit" class="clear-button">Clear All Expenses</button>
+        </form>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Amount</th>
+                    <th>Category</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in expenses %}
+                <tr>
+                    <td>{{ expense['title'] }}</td>
+                    <td>₹{{ expense['amount'] }}</td>
+                    <td>{{ expense['category'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="logout-container">
+            <a href="/logout" class="logout-button">Logout</a>
+        </div>
+    </div>
+
+    <script>
+        const expenses = {{ expenses|tojson }};
+        const income = {{ income }};
+        const totalSpent = {{ total_expense }};
+        const savings = {{ savings }};
+
+        const categoryTotals = {
+            Food: 0,
+            Travel: 0,
+            Bills: 0,
+            Shopping: 0
+        };
+
+        expenses.forEach(exp => {
+            if (categoryTotals[exp.category] !== undefined) {
+                categoryTotals[exp.category] += exp.amount;
+            }
+        });
+
+        const data = {
+            labels: ['Food', 'Travel', 'Bills', 'Shopping', 'Savings'],
+            datasets: [{
+                data: [
+                    categoryTotals.Food,
+                    categoryTotals.Travel,
+                    categoryTotals.Bills,
+                    categoryTotals.Shopping,
+                    savings
+                ],
+                backgroundColor: [
+                    '#f44336', // Food
+                    '#2196f3', // Travel
+                    '#ff9800', // Bills
+                    '#9c27b0', // Shopping
+                    '#4caf50'  // Savings
+                ]
+            }]
+        };
+
+        const config = {
+            type: 'pie',
+            data: data,
+            options: {
+                responsive: true
+            }
+        };
+
+        const expenseChart = new Chart(
+            document.getElementById('expenseChart'),
+            config
+        );
+    </script>
+</body>
+</html>
